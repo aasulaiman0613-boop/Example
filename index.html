@@ -3,112 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BRAND | Functional Prototype</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>LUXE | Minimalist Storefront</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #FFFFFF; --text: #1A1A1A; --accent: #007BFF; --overlay: rgba(0,0,0,0.5); }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
-
-        /* Navigation & Cart Trigger */
-        nav { position: sticky; top: 0; background: #fff; padding: 2rem 5%; display: flex; justify-content: space-between; align-items: center; z-index: 100; border-bottom: 1px solid #eee; }
-        .cart-trigger { cursor: pointer; font-weight: 700; }
-
-        /* Drawer & Modals */
-        .overlay { position: fixed; top: 0; right: -100%; width: 30%; height: 100%; background: white; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: 0.3s; padding: 2rem; z-index: 1000; overflow-y: auto; }
-        @media (max-width: 768px) { .overlay { width: 80%; } }
-        .overlay.active { right: 0; }
-        
-        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay); display: none; justify-content: center; align-items: center; z-index: 2000; }
-        .modal { background: white; padding: 2rem; width: 90%; max-width: 400px; border-radius: 8px; }
-
-        /* Toast */
-        #toast { position: fixed; top: 20px; right: 20px; background: #333; color: white; padding: 1rem; border-radius: 4px; display: none; z-index: 3000; }
-
-        /* Grid */
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; padding: 5rem 5%; }
-        .prod-img { width: 100%; aspect-ratio: 1/1; background: #000; margin-bottom: 1rem; }
-        .btn { background: var(--accent); color: white; padding: 0.8rem 1.5rem; border: none; cursor: pointer; width: 100%; }
-        
-        input { display: block; width: 100%; margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        body { font-family: 'Inter', sans-serif; }
+        .bento-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+        .cart-drawer { transition: transform 0.3s ease-in-out; }
     </style>
 </head>
-<body>
+<body class="bg-white text-black">
 
-    <nav>
-        <div class="logo">BRAND</div>
-        <div class="cart-trigger" onclick="toggleDrawer()">Cart (<span id="count">0</span>)</div>
+    <nav class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold tracking-tighter">LUXE.</h1>
+        <button onclick="toggleCart()" class="text-sm font-semibold hover:text-blue-600 transition">Cart (<span id="cart-count">0</span>)</button>
     </nav>
 
-    <div class="grid" id="shop"></div>
+    <section class="px-6 py-20 text-center">
+        <h2 class="text-6xl font-light mb-6">Designed for the future.</h2>
+        <button class="bg-black text-white px-8 py-3 rounded-full hover:bg-blue-600 transition">Shop Collection</button>
+    </section>
 
-    <div class="overlay" id="drawer">
-        <h3>Your Cart</h3>
-        <div id="cart-items" style="margin: 2rem 0;"></div>
-        <p><strong>Total: $<span id="total">0.00</span></strong></p>
-        <button class="btn" style="margin-top: 1rem;" onclick="openCheckout()">Checkout</button>
+    <div class="flex justify-around py-8 border-y border-gray-100 text-xs text-gray-500 uppercase tracking-widest">
+        <span>Free Shipping</span><span>Secure Checkout</span><span>2-Year Warranty</span>
     </div>
 
-    <div class="modal-backdrop" id="checkout-modal">
-        <div class="modal" id="modal-content">
-            <h3>Checkout</h3>
-            <input type="text" placeholder="Name" required>
-            <input type="email" placeholder="Email" required>
-            <input type="text" placeholder="Shipping Address" required>
-            <button class="btn" onclick="completePurchase()">Complete Purchase</button>
+    <main id="product-grid" class="p-6 bento-grid max-w-7xl mx-auto"></main>
+
+    <div id="cart-drawer" class="fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl z-50 transform translate-x-full cart-drawer p-6 overflow-y-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h3 class="text-xl font-bold">Your Bag</h3>
+            <button onclick="toggleCart()" class="text-gray-400">Close</button>
+        </div>
+        <div id="cart-items" class="space-y-4"></div>
+        <div class="mt-8 border-t pt-4">
+            <div class="flex justify-between mb-4"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
+            <button onclick="openCheckout()" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-black transition">Checkout</button>
         </div>
     </div>
 
-    <div id="toast">Added to cart!</div>
+    <div id="checkout-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div class="bg-white p-8 rounded-2xl w-full max-w-md" id="checkout-content">
+            </div>
+    </div>
 
     <script>
-        let cart = [];
+        // 1. DATA LAYER
         const products = [
-            {id: 1, name: "Product 1", price: 49.99},
-            {id: 2, name: "Product 2", price: 59.99},
-            {id: 3, name: "Product 3", price: 39.99},
-            {id: 4, name: "Product 4", price: 89.99},
-            {id: 5, name: "Product 5", price: 29.99},
-            {id: 6, name: "Product 6", price: 99.99}
+            { id: 1, name: "Ion Watch", price: 299, desc: "Precision engineering." },
+            { id: 2, name: "Sonic Buds", price: 199, desc: "Immersive sound profile." },
+            { id: 3, name: "Air Sleeve", price: 89, desc: "Minimalist protection." },
+            { id: 4, name: "Flux Charger", price: 49, desc: "Lightning fast power." },
+            { id: 5, name: "Core Stand", price: 129, desc: "Architectural stability." },
+            { id: 6, name: "Slate Mouse", price: 159, desc: "Ergonomic perfection." }
         ];
 
-        // Init Store
-        const shop = document.getElementById('shop');
-        products.forEach(p => {
-            shop.innerHTML += `<div><div class="prod-img"></div><h3>${p.name}</h3><p>$${p.price}</p><button class="btn" onclick="addToCart(${p.id})">Add to Cart</button></div>`;
-        });
+        let cart = [];
 
+        // 2. RENDERING LOGIC
+        function renderProducts() {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = products.map(p => `
+                <div class="p-8 border border-gray-100 rounded-3xl hover:border-black transition-all group">
+                    <div class="h-48 bg-gray-50 rounded-2xl mb-6 group-hover:bg-blue-50 transition"></div>
+                    <h3 class="font-bold text-lg">${p.name}</h3>
+                    <p class="text-gray-500 text-sm mb-4">${p.desc}</p>
+                    <button onclick="addToCart(${p.id})" class="text-blue-600 font-semibold hover:underline">Add to Cart</button>
+                </div>
+            `).join('');
+        }
+
+        // 3. CART MANAGEMENT
         function addToCart(id) {
-            const item = products.find(p => p.id === id);
-            cart.push(item);
-            updateCart();
-            showToast();
+            const product = products.find(p => p.id === id);
+            cart.push({...product, qty: 1});
+            updateCartUI();
+            alert(`${product.name} added to cart.`);
         }
 
-        function updateCart() {
-            document.getElementById('count').innerText = cart.length;
-            const container = document.getElementById('cart-items');
-            container.innerHTML = cart.map(i => `<p>${i.name} - $${i.price}</p>`).join('');
-            document.getElementById('total').innerText = cart.reduce((sum, i) => sum + i.price, 0).toFixed(2);
+        function updateCartUI() {
+            const cartItems = document.getElementById('cart-items');
+            const subtotalEl = document.getElementById('subtotal');
+            document.getElementById('cart-count').innerText = cart.length;
+            
+            cartItems.innerHTML = cart.map((item, index) => `
+                <div class="flex justify-between items-center">
+                    <span>${item.name}</span>
+                    <span>$${item.price}</span>
+                </div>
+            `).join('');
+            
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            subtotalEl.innerText = `$${total.toFixed(2)}`;
         }
 
-        function toggleDrawer() { document.getElementById('drawer').classList.toggle('active'); }
-        
-        function showToast() {
-            const t = document.getElementById('toast');
-            t.style.display = 'block';
-            setTimeout(() => t.style.display = 'none', 2000);
+        function toggleCart() {
+            const drawer = document.getElementById('cart-drawer');
+            drawer.classList.toggle('translate-x-full');
         }
 
-        function openCheckout() { document.getElementById('checkout-modal').style.display = 'flex'; }
-
-        function completePurchase() {
-            const m = document.getElementById('modal-content');
-            m.innerHTML = `<div style="text-align:center"><h3>Processing...</h3><div style="animation: pulse 1s infinite">...</div></div>`;
-            setTimeout(() => {
-                m.innerHTML = `<h3>Thank you for your order! (Demo Only)</h3><button class="btn" onclick="location.reload()">Close</button>`;
-            }, 2000);
+        // 4. CHECKOUT FLOW
+        function openCheckout() {
+            document.getElementById('checkout-modal').classList.remove('hidden');
+            document.getElementById('checkout-content').innerHTML = `
+                <h3 class="text-2xl font-bold mb-4">Shipping Details</h3>
+                <input type="text" placeholder="Full Name" class="w-full border p-3 mb-2 rounded">
+                <input type="email" placeholder="Email Address" class="w-full border p-3 mb-4 rounded">
+                <button onclick="finalizeCheckout()" class="w-full bg-black text-white py-3 rounded">Confirm</button>
+            `;
         }
+
+        function finalizeCheckout() {
+            document.getElementById('checkout-content').innerHTML = `
+                <h3 class="text-2xl font-bold mb-4">Success!</h3>
+                <p>Order #${Math.floor(Math.random()*100000)} placed successfully.</p>
+                <button onclick="location.reload()" class="mt-4 text-blue-600">Return Home</button>
+            `;
+        }
+
+        renderProducts();
     </script>
 </body>
 </html>
