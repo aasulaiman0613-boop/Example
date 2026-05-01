@@ -3,125 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BRAND | Minimalist Luxury</title>
+    <title>BRAND | Functional Prototype</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #FFFFFF;
-            --text: #1A1A1A;
-            --accent: #007BFF;
-            --gray: #F4F4F4;
-        }
-
+        :root { --bg: #FFFFFF; --text: #1A1A1A; --accent: #007BFF; --overlay: rgba(0,0,0,0.5); }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
 
-        /* Navigation */
-        nav { position: sticky; top: 0; background: rgba(255,255,255,0.95); padding: 2rem 5%; display: flex; justify-content: space-between; align-items: center; z-index: 1000; border-bottom: 1px solid #eee; }
-        .logo { font-weight: 700; font-size: 1.5rem; letter-spacing: -1px; }
-        .nav-links { display: flex; gap: 2rem; align-items: center; }
+        /* Navigation & Cart Trigger */
+        nav { position: sticky; top: 0; background: #fff; padding: 2rem 5%; display: flex; justify-content: space-between; align-items: center; z-index: 100; border-bottom: 1px solid #eee; }
+        .cart-trigger { cursor: pointer; font-weight: 700; }
 
-        /* Hero */
-        .hero { display: grid; grid-template-columns: 1fr 1fr; padding: 5rem 5%; align-items: center; gap: 4rem; }
-        .hero-content h1 { font-size: 3.5rem; margin-bottom: 1.5rem; line-height: 1.1; }
-        .hero-img { width: 100%; aspect-ratio: 1/1; background: #000; }
-        .btn { background: var(--accent); color: white; padding: 1rem 2rem; border: none; cursor: pointer; font-weight: 600; transition: transform 0.2s; }
-        .btn:hover { transform: translateY(-3px); }
-
-        /* Trust Strip */
-        .trust-strip { display: flex; justify-content: space-between; padding: 2rem 5%; border-top: 1px solid #eee; border-bottom: 1px solid #eee; gap: 1rem; }
-        .logo-placeholder { width: 100px; height: 30px; background: #ddd; }
-
-        /* Product Grid */
-        .collection { padding: 5rem 5%; }
-        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-top: 3rem; }
-        .card { padding: 1rem; transition: box-shadow 0.3s; border: 1px solid #eee; }
-        .card:hover { box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        .prod-img { width: 100%; aspect-ratio: 1/1; background: #000; margin-bottom: 1rem; }
-        .card h3 { margin-bottom: 0.5rem; }
-
-        /* Review */
-        .review { text-align: center; padding: 5rem 20%; background: var(--gray); }
-        .stars { color: var(--accent); margin-bottom: 1rem; }
-
-        /* Footer */
-        footer { padding: 3rem 5%; text-align: center; font-size: 0.9rem; color: #666; }
+        /* Drawer & Modals */
+        .overlay { position: fixed; top: 0; right: -100%; width: 30%; height: 100%; background: white; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: 0.3s; padding: 2rem; z-index: 1000; overflow-y: auto; }
+        @media (max-width: 768px) { .overlay { width: 80%; } }
+        .overlay.active { right: 0; }
         
-        @media (max-width: 768px) {
-            .hero { grid-template-columns: 1fr; text-align: center; }
-            .grid { grid-template-columns: 1fr; }
-        }
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .modal { background: white; padding: 2rem; width: 90%; max-width: 400px; border-radius: 8px; }
+
+        /* Toast */
+        #toast { position: fixed; top: 20px; right: 20px; background: #333; color: white; padding: 1rem; border-radius: 4px; display: none; z-index: 3000; }
+
+        /* Grid */
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; padding: 5rem 5%; }
+        .prod-img { width: 100%; aspect-ratio: 1/1; background: #000; margin-bottom: 1rem; }
+        .btn { background: var(--accent); color: white; padding: 0.8rem 1.5rem; border: none; cursor: pointer; width: 100%; }
+        
+        input { display: block; width: 100%; margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
 
     <nav>
         <div class="logo">BRAND</div>
-        <div class="nav-links">
-            <a href="#">Shop</a>
-            <div id="cart-count">Cart (0)</div>
-        </div>
+        <div class="cart-trigger" onclick="toggleDrawer()">Cart (<span id="count">0</span>)</div>
     </nav>
 
-    <header class="hero">
-        <div class="hero-content">
-            <h1>The Future of Lifestyle is Here</h1>
-            <p>Experience quality engineered for simplicity. Crafted for those who demand more.</p>
-            <br>
-            <button class="btn">Shop Now</button>
+    <div class="grid" id="shop"></div>
+
+    <div class="overlay" id="drawer">
+        <h3>Your Cart</h3>
+        <div id="cart-items" style="margin: 2rem 0;"></div>
+        <p><strong>Total: $<span id="total">0.00</span></strong></p>
+        <button class="btn" style="margin-top: 1rem;" onclick="openCheckout()">Checkout</button>
+    </div>
+
+    <div class="modal-backdrop" id="checkout-modal">
+        <div class="modal" id="modal-content">
+            <h3>Checkout</h3>
+            <input type="text" placeholder="Name" required>
+            <input type="email" placeholder="Email" required>
+            <input type="text" placeholder="Shipping Address" required>
+            <button class="btn" onclick="completePurchase()">Complete Purchase</button>
         </div>
-        <div class="hero-img"></div>
-    </header>
+    </div>
 
-    <section class="trust-strip">
-        <div class="logo-placeholder"></div>
-        <div class="logo-placeholder"></div>
-        <div class="logo-placeholder"></div>
-        <div class="logo-placeholder"></div>
-        <div class="logo-placeholder"></div>
-    </section>
-
-    <section class="collection">
-        <h2>Our Signature Collection</h2>
-        <div class="grid" id="product-grid">
-            <script>
-                for(let i=1; i<=6; i++) {
-                    document.write(`
-                        <div class="card">
-                            <div class="prod-img"></div>
-                            <h3>Product ${i}</h3>
-                            <p>$49.99</p>
-                            <br>
-                            <button class="btn add-btn" style="width:100%">Add to Cart</button>
-                        </div>
-                    `);
-                }
-            </script>
-        </div>
-    </section>
-
-    <section class="review">
-        <div class="stars">★★★★★</div>
-        <p>"This changed my daily routine completely. Can't imagine going back."</p>
-        <p><strong>— Jane D.</strong></p>
-    </section>
-
-    <footer>
-        <p>&copy; 2026 BRAND. | <a href="#">FAQ</a> | <a href="#">Shipping</a> | <a href="#">Contact</a></p>
-    </footer>
+    <div id="toast">Added to cart!</div>
 
     <script>
-        let count = 0;
-        const cartDisplay = document.getElementById('cart-count');
-        
-        document.querySelectorAll('.add-btn').forEach(button => {
-            button.addEventListener('click', () => {
-                count++;
-                cartDisplay.innerText = `Cart (${count})`;
-                button.innerText = "Added!";
-                setTimeout(() => button.innerText = "Add to Cart", 2000);
-            });
+        let cart = [];
+        const products = [
+            {id: 1, name: "Product 1", price: 49.99},
+            {id: 2, name: "Product 2", price: 59.99},
+            {id: 3, name: "Product 3", price: 39.99},
+            {id: 4, name: "Product 4", price: 89.99},
+            {id: 5, name: "Product 5", price: 29.99},
+            {id: 6, name: "Product 6", price: 99.99}
+        ];
+
+        // Init Store
+        const shop = document.getElementById('shop');
+        products.forEach(p => {
+            shop.innerHTML += `<div><div class="prod-img"></div><h3>${p.name}</h3><p>$${p.price}</p><button class="btn" onclick="addToCart(${p.id})">Add to Cart</button></div>`;
         });
+
+        function addToCart(id) {
+            const item = products.find(p => p.id === id);
+            cart.push(item);
+            updateCart();
+            showToast();
+        }
+
+        function updateCart() {
+            document.getElementById('count').innerText = cart.length;
+            const container = document.getElementById('cart-items');
+            container.innerHTML = cart.map(i => `<p>${i.name} - $${i.price}</p>`).join('');
+            document.getElementById('total').innerText = cart.reduce((sum, i) => sum + i.price, 0).toFixed(2);
+        }
+
+        function toggleDrawer() { document.getElementById('drawer').classList.toggle('active'); }
+        
+        function showToast() {
+            const t = document.getElementById('toast');
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 2000);
+        }
+
+        function openCheckout() { document.getElementById('checkout-modal').style.display = 'flex'; }
+
+        function completePurchase() {
+            const m = document.getElementById('modal-content');
+            m.innerHTML = `<div style="text-align:center"><h3>Processing...</h3><div style="animation: pulse 1s infinite">...</div></div>`;
+            setTimeout(() => {
+                m.innerHTML = `<h3>Thank you for your order! (Demo Only)</h3><button class="btn" onclick="location.reload()">Close</button>`;
+            }, 2000);
+        }
     </script>
 </body>
 </html>
